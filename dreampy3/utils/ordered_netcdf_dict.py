@@ -14,7 +14,7 @@ def netcdf_repr(key, val):
                         break
                     variab = variab + t.decode()
             else:
-                variab = val[:].tostring().strip()#.decode('utf-8')  #.strip('\x00')
+                variab = val[:].tostring().strip().decode() #.decode('utf-8')  #.strip('\x00')
         else:
             variab = val[:]    
     else:
@@ -36,7 +36,7 @@ def netcdf_getValue(val):
                         break
                     variab = variab + t.decode()
             else:
-                variab = val[:].tostring().strip().decode('utf-8')  #.strip('\x00')
+                variab = val[:].tostring().strip().decode()  #decode('utf-8')  #.strip('\x00')
             return variab
         else:
             if val.size > 1:
@@ -119,7 +119,7 @@ class OrderedNetCDFDict(OrderedDict):
         if var is None:
             return default
         else:
-            if type(var) == types.StringType:
+            if isinstance(var, str):
                 return var
             elif isinstance(var, numpy.ndarray):
                 if var.size == 1:
@@ -193,5 +193,90 @@ class OrderedNetCDFDict(OrderedDict):
             new_var[:] = value
             var[h] = new_var
             
-
+def headervar_repr(key, val):
+    if isinstance(val, numpy.ndarray):
+        variab = repr(val.tolist())
+    else:
+        variab = val
+    return variab
                                         
+class OrderedHeaderDict(OrderedDict):
+    """
+    Inherits from Ordered Dictionary object type.
+    The netCDF variables are stored as OrederedNetCDFDict instants.
+    This class allows the setting and getting of values
+    """
+    def _reprlist(self):
+        mystr_list = ['{ ']
+        #for i, key in enumerate(self._sequence):
+        for i, key in enumerate(self.keys()):
+            mystr_list.append("  '%s': %s" % (key, headervar_repr(key, self[key])))
+        mystr_list.append('}')
+        return mystr_list
+    
+    def __repr__(self):
+        """
+        Used for __repr__ and __str__
+        """
+        #return '{%s}' % ('\n'. join(['%r: %r' % (key, netcdf_repr(self[key])) for key in self._sequence]))
+        mystr_list = ['{ ']
+        for i, key in enumerate(self.keys()):
+            if isinstance(self[key], OrderedDict):
+                mystr_list.append("  '%s':" % key)
+                mystr_list.extend([' '*(len(key)+4)+s for s in self[key]._reprlist()])
+            else:
+                mystr_list.append("  '%s': %s" % (key, headervar_repr(key, self[key])))
+        mystr_list.append('}')
+        #if isinstance(
+        return '\n'.join(mystr_list)
+
+    def get(self, item, default=None, debug=False):
+        """
+        Given an item such as 'Dcs.Receiver', returns the value
+        of the NetCDF variable corresponding to self['Dcs']['Receiver']
+        If you just specify, 'Dcs', it will look for a NetCDF variable
+        with that name.
+        """
+        if item.find('.'):
+            header_tree = item.split('.')
+            #val = self.copy()
+            val = self
+            for h in header_tree:
+                if h in val:
+                    val = val.__getitem__(h)
+                else:
+                    if debug:
+                        print("Key %s not found in header" % h)
+                    return default
+            return netcdf_getValue(val)
+        else:
+            #no dots return the header item directly
+            if h in self:
+                val = self.__getitem__(item)
+            else:
+                if debug:
+                    print("Key %s not found in header" % item)
+                return default
+            return netcdf_getValue(val)
+
+    def get_scalar(self, item, default=None):
+        """
+        Given a scalar item such as 'Dcs.Receiver', returns the value
+        of the NetCDF variable corresponding to self['Dcs']['Receiver']
+        If you just specify, 'Dcs', it will look for a NetCDF variable
+        with that name.
+        """
+        var = self.get(item, default=default)
+        if var is None:
+            return default
+        else:
+            if isinstance(var, str):
+                return var
+            elif isinstance(var, numpy.ndarray):
+                if var.size == 1:
+                    return var.dtype.type(var[0])
+                else:
+                    print("Not scalar")
+                    return var
+            else:
+                return var

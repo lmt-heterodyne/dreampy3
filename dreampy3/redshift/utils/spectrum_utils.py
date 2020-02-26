@@ -51,11 +51,14 @@ def _set_bad_lags(chassis, board, blags):
         raise LMTRedshiftError("_set_bad_lags", "Chassis should be 0,1,2 or 3")
     if board not in range(6):
         raise LMTRedshiftError("_set_bad_lags", "Board should be 0,1,2,3,4 or 5")
-    if type(blags) in (types.ListType, types.TupleType):
+    #if type(blags) in (types.ListType, types.TupleType):
+    if isinstance(blags, list) or isinstance(blags, tuple):
         blag_str = '/'.join(map(str, blags))
-    elif type(blags) == types.IntType:
+    #elif type(blags) == types.IntType:
+    elif isinstance(blags, int):
         blag_str = '%d' % blags
-    elif type(blags) == types.StringType:
+    #elif type(blags) == types.StringType:
+    elif isinstance(blags, str):
         blag_str = blags
     bl = []
     for bd in range(6):
@@ -71,12 +74,12 @@ def set_bad_lags():
     """
     Interactive set_bad_lags for redshift boards
     """
-    chassis = int(raw_input("Enter Chassis number (one of 0,1,2 or 3) > "))
-    board = int(raw_input("Enter Board number (one of 0,1,2,3,4 or 5) > "))
+    chassis = int(input("Enter Chassis number (one of 0,1,2 or 3) > "))
+    board = int(input("Enter Board number (one of 0,1,2,3,4 or 5) > "))
     print("Current bad lags for chassis %d and board %d : %s" % (chassis, board, get_bad_lags(chassis, board)))
-    blags_str = raw_input("Enter bad lags for Chassis %d, board %d in comma-separated form > " % (chassis, board))
+    blags_str = input("Enter bad lags for Chassis %d, board %d in comma-separated form > " % (chassis, board))
     if blags_str:
-        blags = map(int, blags_str.split(','))
+        blags = list(map(int, blags_str.split(',')))
     else:
         blags = ''
     _set_bad_lags(chassis, board, blags)
@@ -109,19 +112,19 @@ def print_bad_lags(chassis=None, board=None):
     all chassis and all boards"""
     if chassis is None:
         chassis = numpy.arange(4)
-    elif type(chassis) in (types.ListType, types.TupleType):
+    elif isinstance(chassis, list) or isinstance(chassis, tuple):
         chassis = chassis
     elif isinstance(chassis, numpy.ndarray):
         chassis = chassis
-    elif type(chassis) == types.IntType:
+    elif isinstance(chassis, int):
         chassis = [chassis]
     if board is None:
         board = numpy.arange(6)
-    elif type(board) in (types.ListType, types.TupleType):
+    elif isinstance(board, list) or isinstance(board, tuple):
         board = board
     elif isinstance(board, numpy.ndarray):
         board = board
-    elif type(board) == types.IntType:
+    elif isinstance(board, int):
         board = [board]
     for chas in chassis:
         for bd in board:

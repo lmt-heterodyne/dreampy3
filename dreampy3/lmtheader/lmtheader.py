@@ -1,6 +1,7 @@
 import numpy
 from netCDF4 import Variable as NetCDFVariable
-from dreampy3.utils.ordered_netcdf_dict import OrderedNetCDFDict
+from dreampy3.utils.ordered_netcdf_dict import OrderedNetCDFDict, \
+    OrderedHeaderDict
 from collections import OrderedDict
 
 class LMTHeader(OrderedNetCDFDict):
@@ -58,7 +59,14 @@ class LMTHeader(OrderedNetCDFDict):
     #     hstr += '}\n'
     #     return hstr
 
-    
+    def make_nominal_header(self):
+        hdr = OrderedHeaderDict()
+        for key, value in self.items():
+            hdr[key] = OrderedHeaderDict()
+            for k, v in value.items():
+                hdr[key][k] = self.get('%s.%s' % (key, k))
+        return hdr
+                
     def _pprint_subhead(self, k, v):
         hstr = '{'
         for i, (key, val) in enumerate(v.items()):

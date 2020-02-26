@@ -53,7 +53,7 @@ class RedshiftPlotBase(DreamPlotBase):
         hdr, data, fname = self._get_hdu(nc)
         repeats = data.AccData.shape[0]
         if hdr.ObsPgm == 'Bs':
-            return repeats/2
+            return int(repeats/2)
         else:
             return repeats
 
@@ -95,12 +95,12 @@ class RedshiftPlotBase(DreamPlotBase):
             boards = [board]
         if rpt is None:
             #do all repeats
-            #repeats = xrange(data.AccData.shape[0])
+            #repeats = range(data.AccData.shape[0])
             repeats = self._get_repeats(nc)
             rpt = 1
         else:
             repeats = [rpt-1]
-        for repeat in xrange(repeats):
+        for repeat in range(repeats):
             for board in boards:
                 if dosubplots:
                     self.add_subplot(2, 3, board+1)
@@ -177,7 +177,7 @@ class RedshiftPlotBase(DreamPlotBase):
             boards = [board]
         if rpt is None:
             #do all repeats
-            #repeats = xrange(hdu.data.AccData.shape[0])
+            #repeats = range(hdu.data.AccData.shape[0])
             repeats = self._get_repeats(nc)
             rpt = 1
         else:
@@ -187,7 +187,7 @@ class RedshiftPlotBase(DreamPlotBase):
                 self.plot(frequencies[board, :], spectrum[:, board, :].mean(axis=0),
                           drawstyle='steps-mid', label='%d.%d' % (int(hdu.header.ChassisNumber), board))
         else:
-            for repeat in xrange(repeats):
+            for repeat in range(repeats):
                 for board in boards:
                     self.plot(frequencies[board, :], spectrum[repeat, board, :],
                               drawstyle='steps-mid', label='%d.%d r%d' % (int(hdu.header.ChassisNumber), board, repeat))

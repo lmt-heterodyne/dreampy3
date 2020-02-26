@@ -43,35 +43,63 @@ def process_signal_2(bb_level, chop, window=3, harm=2):
 
     return(aresult,presult)
 
+def process_chopped_encoder(chop, thresholds=[[15,45,181],[110,135]]):
+    # create array of indices for main and ref based on chop array
+    ang = (chop/8000*360)%180
 
-def process_chopped_signal(bb_level, chop, window=3, threshold=0.5,
-                           shift=0):
+    midx = numpy.where(numpy.logical_or(numpy.logical_and(ang > thresholds[0][0], ang < thresholds[0][1]),numpy.logical_and(ang>thresholds[0][2],ang<=180)))[0]
+    ridx = numpy.where(numpy.logical_and(ang > thresholds[1][0], ang < thresholds[1][1]))[0]
+    return midx, ridx
+
+def process_chopped_signal(bb_level, chop, window=6,
+                           thresholds=[[15,45,181],[110,135]]):
+    '''
+    gated chopper signal processor
+    inputs:
+         bb_level is npts by nchannels 2D array with baseband if data samples
+         chop is chopper wheel position 0 to 8000 corresponds to 0 to 360 degrees
+         window defines smoothing window of 2*window + 1 points.  The total smoothing
+          window must span at least one chop cycle
+         thresholds are positions for including data points in the main and ref
+           thresholds[0] elements give main limits in degrees from 0 to 180
+                         data are included if between thresholds[0][0] and thresholds[0][1]
+                         OR if greater than thresholds[0][2]
+           thresholds[1] elements give reference limits
+                         data are included if between thresholds[1][0] and thresholds[1][1]
+    output:
+         result is a 2D array with npts samples to match input arrays and nchannels.
+    '''
+
+    # look at the shape of the arrays to determine if super sampled and reshape
+    s1 = numpy.shape(bb_level)
+    s2 = numpy.shape(chop)
+    if len(s1) == 3 and len(s2) == 2:
+        if s1[0] != s2[0] or s1[1] != s2[1]:
+            return None
+        bb_level = bb_level.reshape(s1[0]*s1[1], s1[2])
+        chop = chop.reshape(s2[0]*s2[1])
+        super_sample = s1[1]
+        window = window*super_sample
+    else:
+        super_sample = 1
+
+
     npts = len(chop)
-    nchannels = numpy.shape(bb_level)[1]
-    
+    nchannels = numpy.shape(bb_level)[-1]
+
     # define the smoothing window
-    ww = 2*window + 1
+    ww = 2*window+1
 
-    # create array of indices for main, ref, blank based on chop array
-    print('chop shift',  shift)
-    switch = numpy.cos(2.*(chop-shift)/8000*2.*numpy.pi)
+    # find indices where encoder value are within a range
+    midx, ridx = process_chopped_encoder(chop, thresholds=thresholds)
 
-    # find indices where cos of encoder value exceeds a threshold
-    midx = numpy.where(switch > threshold)[0]
-    ridx = numpy.where(switch < -threshold)[0]
-
-    # create arrays for main and ref's identified by indices
     msig = numpy.zeros(npts)
+    msig[midx] = 1
     rsig = numpy.zeros(npts)
+    rsig[ridx] = 1
 
-    # load arrays with 1 where indices for main and ref identified
-    msig[midx] = 1.
-    rsig[ridx] = 1.
+    result = numpy.zeros((npts,nchannels))
 
-    result = numpy.zeros((npts, nchannels))
-    main = numpy.zeros((npts, nchannels))
-    ref = numpy.zeros((npts, nchannels))
-    
     for i in range(nchannels):
         channel_level = bb_level[:,i] # gets rid of "masked array
 
@@ -82,8 +110,6 @@ def process_chopped_signal(bb_level, chop, window=3, threshold=0.5,
         # to do this accurately we also need a rolling sum for normalization
         mnorm = numpy.cumsum(numpy.insert(msig,0,0))
         mrollnorm = mnorm[ww:]-mnorm[:-ww]
-        if not 0 in mrollnorm:
-            mrollsum /= mrollnorm
 
         # same procedure for reference points
         rsum = numpy.cumsum(numpy.insert(rsig*channel_level,0,0))
@@ -92,24 +118,86 @@ def process_chopped_signal(bb_level, chop, window=3, threshold=0.5,
         # same normalization procedure for reference points
         rnorm = numpy.cumsum(numpy.insert(rsig,0,0))
         rrollnorm = rnorm[ww:]-rnorm[:-ww]
-        if not 0 in rrollnorm:
-            rrollsum /= rrollnorm
 
         # now compute difference between main and ref for all points 
-        result[window:npts-window,i] = mrollsum - rrollsum
+        result[window:npts-window,i] = mrollsum/mrollnorm - rrollsum/rrollnorm
         result[:window,i] = result[window,i]*numpy.ones(window)
         result[npts-window:,i] = result[npts-window-1,i]*numpy.ones(window)
 
-        main[window:npts-window,i] = mrollsum
-        main[:window,i] = main[window,i]*numpy.ones(window)
-        main[npts-window:,i] = main[npts-window-1,i]*numpy.ones(window)
+    # average the arrays back down if super sampled
+    if super_sample > 1:
+        result = numpy.mean(result.reshape(-1, super_sample, nchannels), axis=1)
+        msig = numpy.mean(msig.reshape(-1, super_sample), axis=1)
+        rsig = numpy.mean(rsig.reshape(-1, super_sample), axis=1)
 
-        ref[window:npts-window,i] = rrollsum
-        ref[:window,i] = ref[window,i]*numpy.ones(window)
-        ref[npts-window:,i] = ref[npts-window-1,i]*numpy.ones(window)        
+    return(result)
+
+# def process_chopped_signal(bb_level, chop, window=3, threshold=0.5,
+#                            shift=0):
+#     npts = len(chop)
+#     nchannels = numpy.shape(bb_level)[1]
+    
+#     # define the smoothing window
+#     ww = 2*window + 1
+
+#     # create array of indices for main, ref, blank based on chop array
+#     print('chop shift',  shift)
+#     switch = numpy.cos(2.*(chop-shift)/8000*2.*numpy.pi)
+
+#     # find indices where cos of encoder value exceeds a threshold
+#     midx = numpy.where(switch > threshold)[0]
+#     ridx = numpy.where(switch < -threshold)[0]
+
+#     # create arrays for main and ref's identified by indices
+#     msig = numpy.zeros(npts)
+#     rsig = numpy.zeros(npts)
+
+#     # load arrays with 1 where indices for main and ref identified
+#     msig[midx] = 1.
+#     rsig[ridx] = 1.
+
+#     result = numpy.zeros((npts, nchannels))
+#     main = numpy.zeros((npts, nchannels))
+#     ref = numpy.zeros((npts, nchannels))
+    
+#     for i in range(nchannels):
+#         channel_level = bb_level[:,i] # gets rid of "masked array
+
+#         # create a rolling sum of the main points
+#         msum = numpy.cumsum(numpy.insert(msig*channel_level,0,0))
+#         mrollsum = msum[ww:]-msum[:-ww]
+
+#         # to do this accurately we also need a rolling sum for normalization
+#         mnorm = numpy.cumsum(numpy.insert(msig,0,0))
+#         mrollnorm = mnorm[ww:]-mnorm[:-ww]
+#         if not 0 in mrollnorm:
+#             mrollsum /= mrollnorm
+
+#         # same procedure for reference points
+#         rsum = numpy.cumsum(numpy.insert(rsig*channel_level,0,0))
+#         rrollsum = rsum[ww:]-rsum[:-ww]
+
+#         # same normalization procedure for reference points
+#         rnorm = numpy.cumsum(numpy.insert(rsig,0,0))
+#         rrollnorm = rnorm[ww:]-rnorm[:-ww]
+#         if not 0 in rrollnorm:
+#             rrollsum /= rrollnorm
+
+#         # now compute difference between main and ref for all points 
+#         result[window:npts-window,i] = mrollsum - rrollsum
+#         result[:window,i] = result[window,i]*numpy.ones(window)
+#         result[npts-window:,i] = result[npts-window-1,i]*numpy.ones(window)
+
+#         main[window:npts-window,i] = mrollsum
+#         main[:window,i] = main[window,i]*numpy.ones(window)
+#         main[npts-window:,i] = main[npts-window-1,i]*numpy.ones(window)
+
+#         ref[window:npts-window,i] = rrollsum
+#         ref[:window,i] = ref[window,i]*numpy.ones(window)
+#         ref[npts-window:,i] = ref[npts-window-1,i]*numpy.ones(window)        
 
         
-    return(result, main, ref)
+#     return(result, main, ref)
 
 
 class IFProcScan(LMThdu):

@@ -12,6 +12,7 @@ import datetime
 from .redshift_netcdf_file import RedshiftNetCDFFile
 from dreampy3.redshift.utils import LMTRedshiftError
 from dreampy3.redshift.utils.spectrum_utils import makespectrum, get_corr_cal_matrix, get_bad_lags
+from dreampy3.redshift.utils.fileutils import make_generic_filename 
 from dreampy3.logging import logger
 from numpy import array
 
@@ -105,12 +106,15 @@ class RedshiftCalibration(object):
             #here we do what it takes to access database and get the files
             pass
         else:
-            filenames = glob.glob('/data_lmt/RedshiftChassis%d/RedshiftChassis%d_*_%06d_00_0001.nc' % (self.chassis, self.chassis, self.ObsNum))
-            print("Cal filenames", filenames)
-            ftup = [(time.localtime(os.path.getmtime(f)), f) for f in filenames]
-            ftup.sort()
-            ftup.reverse()
-            fname = ftup[0][1]
+            #filenames = glob.glob('/data_lmt/RedshiftChassis%d/RedshiftChassis%d_*_%06d_00_0001.nc' % (self.chassis, self.chassis, self.ObsNum))
+            filename = make_generic_filename(self.ObsNum, self.chassis)
+            print("Cal filename", filename)
+            #ftup = [(time.localtime(os.path.getmtime(f)), f) for f in filenames]
+            #ftup.sort()
+            #ftup.reverse()
+            #fname = ftup[0][1]
+            fname = filename
+            #nc = RedshiftNetCDFFile(fname)
             nc = RedshiftNetCDFFile(fname)
             self.header = nc.hdu.header
             #eventually replace with real ambient temperature

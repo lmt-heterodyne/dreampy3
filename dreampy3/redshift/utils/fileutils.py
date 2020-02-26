@@ -5,6 +5,7 @@ Pete's simplification functions
 from dateutil.parser import parse
 from .exceptions import LMTRedshiftError
 import glob
+import os
 
 def make_filename(date, scan, chassis, subobsnum=1):
     """
@@ -23,11 +24,17 @@ def make_filename(date, scan, chassis, subobsnum=1):
     filename = '/data_lmt/RedshiftChassis%s/RedshiftChassis%s_%s_%06d_%02d_0001.nc' % (chassis, chassis, dt.strftime('%Y-%m-%d'), scan, subobsnum)
     return filename
 
-def make_generic_filename(scan, chassis, subobsnum=1):
+def make_generic_filename_old(scan, chassis, subobsnum=1):
     if subobsnum is None:
         glb = glob.glob('/data_lmt/RedshiftChassis%s/RedshiftChassis%s_*_%06d_*_0001.nc' % (chassis, chassis, scan))
     else:
         glb = glob.glob('/data_lmt/RedshiftChassis%s/RedshiftChassis%s_*_%06d_%02d_0001.nc' % (chassis, chassis, scan, subobsnum))
     if glb:
         return glb[0]
+
+def make_generic_filename(obsnum, chassis):
+    glb = glob.glob(os.path.join('/data_lmt', 'RedshiftChassis%s/RedshiftChassis%s*%06d*.nc' % (chassis, chassis, obsnum)))
+    if glb:
+        return glb[0]
+    
     
