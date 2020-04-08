@@ -27,3 +27,14 @@ This installation is tested on Ubuntu 18.04 LTS.
     ```
     pip install -r requirements.txt
     ```
+
+6. Setup ipython profile
+   ```
+   ipython profile create dreampy3
+   ```
+
+7. Launch dreampy3
+   ```
+   ipython --profile=dreampy3
+   ```
+
