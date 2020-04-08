@@ -5,7 +5,8 @@ This installation is tested on Ubuntu 18.04 LTS.
 
 1. Clone the repository
     ```
-    git clone git@github.com:gopastro/dreampy3.git
+    git clone https://github.com/lmt-heterodyne/dreampy3.git
+
     ```
 
 2. Change into the dreampy3 directory
