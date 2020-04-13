@@ -17,7 +17,7 @@ logger.name = __name__
 #def _ext2():
 #    print 'ext2'
 
-revString = "$Rev: 278 $: Last Commit"
+revString = "$Rev: 283 $: Last Commit: 13-Apr-2020"
 
 def version():
     print("Dreampy: %s" % revString)
@@ -35,7 +35,7 @@ def first_time_setup():
     Check to see if the user has setup their
     environment correctly
     """
-    dreamdata = '/usr/share/dreampy'
+    #dreamdata = '/usr/share/dreampy'
     #if os.environ.has_key("DREAMDATA"):
     #    if os.path.exists(os.environ["DREAMDATA"]):
     #        dreamdata = os.environ["DREAMDATA"]
@@ -45,17 +45,17 @@ def first_time_setup():
         print('First time DREAMPY use. Setting up ~/.dreampy')
         os.mkdir(userdir)
         #shutil.copyfile(dreamdata+"/data/ipythonrc-dreampy", userdir+"/ipythonrc-dreampy")
-        for fname in ('ipythonrc-dreampy', 'ipy_user_conf.py'):
-            shutil.copyfile(os.path.join(dreamdata, fname),
-                            os.path.join(userdir, fname))
-        f = file(userdir+"/ipythonrc", "w")
+        #for fname in ('ipythonrc-dreampy', 'ipy_user_conf.py'):
+        #    shutil.copyfile(os.path.join(dreamdata, fname),
+        #                    os.path.join(userdir, fname))
+        f = open(userdir+"/ipythonrc", "w")
         f.close()
     else:
         if not os.path.exists(os.path.join(userdir, 'upgraded')):
             logger.info("Upgrading ipy_user_conf.py")
-            shutil.copyfile(os.path.join(dreamdata, 'ipy_user_conf.py'),
-                            os.path.join(userdir, 'ipy_user_conf.py'))
-            f = file(os.path.join(userdir, 'upgraded'), "w")
+            #shutil.copyfile(os.path.join(dreamdata, 'ipy_user_conf.py'),
+            #                os.path.join(userdir, 'ipy_user_conf.py'))
+            f = open(os.path.join(userdir, 'upgraded'), "w")
             f.close()
         #from django.core.management import setup_environ, syncdb
         #import spadb.settings
