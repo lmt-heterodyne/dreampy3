@@ -1098,32 +1098,38 @@ class RedshiftScan(LMThdu):
         blankind = get_blank_indices_array(self._get_spectrum())
         spectrum = blank_to_zero(self._get_spectrum())
         spec = spectrum.copy()
-        self.spectrum = numpy.ma.zeros((1, spec.shape[1], spec.shape[2]),
+        avg_spectrum = numpy.zeros((1, spec.shape[1], spec.shape[2]),
                                     dtype=spec.dtype)
+        #self.spectrum = numpy.ma.zeros((1, spec.shape[1], spec.shape[2]),
+        #                            dtype=spec.dtype)
 
         weights = {}
         for board in range(frequencies.shape[0]):
-            weights[board] = 0.0
+            weights[board] = numpy.zeros(frequencies.shape[1])
         nclist.insert(0, self._get_hdu(self))
         for nc in nclist:
             hdu = self._get_hdu(nc)
             #spec = numpy.nan_to_num(hdu._get_spectrum())
             spec = blank_to_zero(hdu._get_spectrum())
+            blank_nind = numpy.logical_not(
+                         get_blank_indices_array(self._get_spectrum()))
             for board in range(frequencies.shape[0]):
                 wt = hdu._calc_weight(0, board, weight=weight)
                 if weight == 'sigma' and threshold_sigma is not None:
                     print(nc, board, wt, threshold_sigma)
                     if 1/numpy.sqrt(wt) < threshold_sigma:
-                        self.spectrum[0, board, :] += spec[0, board, :] * wt
-                        weights[board] += wt
+                        avg_spectrum[0, board, :] += spec[0, board, :] * wt * \
+                                                       blank_nind[0,board,:]
+                        weights[board] += wt*blank_nind[0,board,:]
                     else:
                         logger.info("Rejecting Board %d nc %s due to sigma threshold" % (board, nc))
                 else:
-                    self.spectrum[0, board, :] += spec[0, board, :] * wt
-                    weights[board] += wt                    
+                    avg_spectrum[0, board, :] += spec[0, board, :] * wt * \
+                                                   blank_nind[0,board,:]
+                    weights[board] += wt * blank_nind[0,board,:]                   
                 #spectrum[0, board, :] += nc.hdu.spectrum[:, board, :].mean(axis=0)
         for board in range(frequencies.shape[0]):
-            self.spectrum[0, board, :] /= weights[board]
+            self.spectrum[0, board, :] =avg_spectrum[0,board,:]/weights[board]
         #blankarr = blankind.mean(axis=0).astype(numpy.bool)
         #blankarr.shape = (1, blankarr.shape[0], blankarr.shape[1])
         #self.spectrum[blankarr] = self.blank
@@ -1188,7 +1194,7 @@ class RedshiftScan(LMThdu):
         will blank channels between 95.6 to 97.3 GHz in board 3 and
         between 104.3 to 104.5 GHz and 109.1 to 110 GHz in board 4
         """
-        if isinstance(freqrange, dict):
+        if not isinstance(freqrange, dict):
             raise LMTRedshiftError("RedshiftScan.blank_frequencies", "freqrane should be a dictionary with board numbers as keys and a list (or tuples) of frequency tuples as values")
         for board, freqlist in freqrange.items():
             if board not in range(6):
