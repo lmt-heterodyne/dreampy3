@@ -865,7 +865,6 @@ class RedshiftScan(LMThdu):
         for rpt in numpy.arange(spectrum.shape[0]):
             self.compspectrum[rpt, :] = self.compspectrum[rpt, :]/wt[rpt, :]
 
-
     def write_composite_scan_to_ascii(self, filename):
         if not hasattr(self, 'compspectrum'):
             raise LMTRedshiftError('write_composite_scan_to_ascii', "ACF data here. First run make_composite_scan on the scan first")
@@ -1051,15 +1050,19 @@ class RedshiftScan(LMThdu):
                     else:
                         logger.info("Rejecting Board %s repeat %s due to sigma threshold" % (board, rpt))
                 else:
-                    self.spectrum[0, board, :] += spec[rpt, board, :] * wt
-                    weights += wt                    
+                    if not spec.mask[rpt,board,:].all():
+                        self.spectrum[0, board, :] += spec[rpt, board, :] * wt
+                        weights += wt     
+
             if weights != 0.0:
                 self.spectrum[0, board, :] /= weights
             else:
                 self.spectrum[0, board, :] = numpy.nan
-            blankarr = blankind.mean(axis=0).astype(numpy.bool)
-            blankarr.shape = (1, blankarr.shape[0], blankarr.shape[1])
-            self.spectrum[blankarr] = self.blank
+            self.spectrum[0,board,:]=numpy.ma.masked_invalid(self.spectrum[0,board,:])
+
+        blankarr = blankind.mean(axis=0).astype(numpy.bool)
+        blankarr.shape = (1, blankarr.shape[0], blankarr.shape[1])
+        self.spectrum[blankarr] = self.blank
         self.baseline()
 
     def average_all_repeats_compspectrum(self, weight='sigma',
@@ -1082,7 +1085,7 @@ class RedshiftScan(LMThdu):
                     self.compspectrum[0, :] += spec[rpt, :] * wt
                     weights += wt
                 else:
-                    logger.info("Rejecting repeat %s due to sigma threshold" % rpt)
+                    logger.info("Rejecting repeat %s due to sigma threshoalse, False], fill_value=999999)ld" % rpt)
             else:
                 self.compspectrum[0, :] += spec[rpt, :] * wt
                 weights += wt                
@@ -1098,7 +1101,7 @@ class RedshiftScan(LMThdu):
         blankind = get_blank_indices_array(self._get_spectrum())
         spectrum = blank_to_zero(self._get_spectrum())
         spec = spectrum.copy()
-        avg_spectrum = numpy.zeros((1, spec.shape[1], spec.shape[2]),
+        avg_spectrum = numpy.ma.zeros((1, spec.shape[1], spec.shape[2]),
                                     dtype=spec.dtype)
         #self.spectrum = numpy.ma.zeros((1, spec.shape[1], spec.shape[2]),
         #                            dtype=spec.dtype)
@@ -1112,7 +1115,7 @@ class RedshiftScan(LMThdu):
             #spec = numpy.nan_to_num(hdu._get_spectrum())
             spec = blank_to_zero(hdu._get_spectrum())
             blank_nind = numpy.logical_not(
-                         get_blank_indices_array(self._get_spectrum()))
+                         get_blank_indices_array(hdu._get_spectrum()))
             for board in range(frequencies.shape[0]):
                 wt = hdu._calc_weight(0, board, weight=weight)
                 if weight == 'sigma' and threshold_sigma is not None:
@@ -1120,16 +1123,19 @@ class RedshiftScan(LMThdu):
                     if 1/numpy.sqrt(wt) < threshold_sigma:
                         avg_spectrum[0, board, :] += spec[0, board, :] * wt * \
                                                        blank_nind[0,board,:]
-                        weights[board] += wt*blank_nind[0,board,:]
+                        weights[board] += wt*blank_nind[0,board,:]*numpy.isfinite(spec[0,board,:].data)
                     else:
                         logger.info("Rejecting Board %d nc %s due to sigma threshold" % (board, nc))
                 else:
-                    avg_spectrum[0, board, :] += spec[0, board, :] * wt * \
+                    if not spec.mask[0,board,:].all() and wt > 1e-40:
+                        avg_spectrum[0, board, :] += spec[0, board, :] * wt * \
                                                    blank_nind[0,board,:]
-                    weights[board] += wt * blank_nind[0,board,:]                   
+                        weights[board] += wt * blank_nind[0,board,:]*numpy.isfinite(spec[0,board,:].data)                   
                 #spectrum[0, board, :] += nc.hdu.spectrum[:, board, :].mean(axis=0)
         for board in range(frequencies.shape[0]):
             self.spectrum[0, board, :] =avg_spectrum[0,board,:]/weights[board]
+            self.spectrum.mask[0, board,:] = weights[board] == 0
+        self.baseline()
         #blankarr = blankind.mean(axis=0).astype(numpy.bool)
         #blankarr.shape = (1, blankarr.shape[0], blankarr.shape[1])
         #self.spectrum[blankarr] = self.blank

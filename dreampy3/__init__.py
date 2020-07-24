@@ -17,7 +17,7 @@ logger.name = __name__
 #def _ext2():
 #    print 'ext2'
 
-revString = "$Rev: 283 $: Last Commit: 13-Apr-2020"
+revString = "$Rev: 284 $: Last Commit: 23-Jul-2020"
 
 def version():
     print("Dreampy: %s" % revString)
