@@ -924,8 +924,8 @@ class RedshiftScan(LMThdu):
             raise LMTRedshiftError("smooth", "at least 2 channel smooth")
         if nchan > 256:
             raise LMTRedshiftError("smooth", "has to be smaller than 256")
-        for rpt in xrange(spectrum.shape[0]):
-            for board in xrange(frequencies.shape[0]):
+        for rpt in range(spectrum.shape[0]):
+            for board in range(frequencies.shape[0]):
                 #xmin, xmax = frequencies[board].min(), frequencies[board].max()
                 spectrum[rpt][board] = numpy.convolve(spectrum[rpt][board],
                                                       numpy.ones(nchan)/nchan, 'same')
