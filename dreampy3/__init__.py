@@ -62,6 +62,8 @@ def first_time_setup():
         #loc = setup_environ(spadb.settings)
         #syncdb(interactive=False)
 
+# @todo   should now be $DATA_LMT/rsr/cal    ???
+
 def corr_cal_setup():
     # Allow user defined data location
     dreamdata = '/usr/share/dreampy'
@@ -89,6 +91,45 @@ def corr_cal_setup():
     #    del dreamdata
     #del userdir, shutil, platform
     return corr_cal_dir
+
+
+def badlags(badlag_file=None, debug=False):
+    """
+       1. resets all badlags
+       2. (optionally) set them from (chassis,board,channel) list
+          the program seek_bad_channels is one way to identify this list
+          It will need to be inspected, to avoid assigning bad lags to short lags
+    """
+    import dreampy3 as dreampy
+
+    # awkward?:  blank the bad_lags from the ~/.dreampy/dreampyrc file
+    # there are 4 chassis and 6 boards for RSR
+    for c in range(4):
+        dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % c] = ['', '', '', '', '', '']
+
+    if badlag_file == None:
+        return
+
+    with open(badlag_file) as blfile:
+        for line in blfile.readlines():
+            if line[0]=='#': continue
+            words = line.split()
+            bad_c = int(words[0])
+            bad_b = int(words[1])
+            bad_l = int(words[2])
+            dp = dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % bad_c][bad_b]
+            if len(dp) == 0:
+                # print("PJT0",bad_c,bad_b,bad_l)
+                dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % bad_c][bad_b] = '%d' % bad_l
+            else:
+                # print("PJT1",bad_c,bad_b,bad_l,dp)
+                dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % bad_c][bad_b] = dp + '/%d' % bad_l
+    if debug:
+        print('BAD LAGS:')
+        print(dreampy.dreampyParams['redshiftchassis'])
+
+
+
 
 # workaround for ipython, which redirects this if banner=0 in ipythonrc
 sys.stdout = sys.__stdout__
