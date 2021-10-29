@@ -25,7 +25,7 @@ def version():
 
 @atexit.register
 def _save_defaults():
-    logger.info('Saving dreampy defaults')
+    logger.info('Saving dreampy defaults in ~/.dreamy/')    # @todo
     if cfgobj:
         cfgobj.save_config(dreampyParams)
 
