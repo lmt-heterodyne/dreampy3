@@ -108,8 +108,10 @@ def badlags(badlag_file=None, debug=False):
         dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % c] = ['', '', '', '', '', '']
 
     if badlag_file == None:
+        print("dreampy3:  bad_lags have been reset")
         return
 
+    nbad = 0
     with open(badlag_file) as blfile:
         for line in blfile.readlines():
             if line[0]=='#': continue
@@ -124,9 +126,13 @@ def badlags(badlag_file=None, debug=False):
             else:
                 # print("PJT1",bad_c,bad_b,bad_l,dp)
                 dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % bad_c][bad_b] = dp + '/%d' % bad_l
+            nbad = nbad + 1
     if debug:
         print('BAD LAGS:')
         print(dreampy.dreampyParams['redshiftchassis'])
+    if nbad > 0:
+        print("dreampy3: %d bad_lags loaded from %s" % (nbad,badlag_file))
+    
 
 
 
