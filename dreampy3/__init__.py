@@ -25,9 +25,11 @@ def version():
 
 @atexit.register
 def _save_defaults():
-    logger.info('Saving dreampy defaults in ~/.dreamy/')    # @todo
-    if cfgobj:
+    if cfgobj and cfgobj.save:
+        logger.info('Saving dreampy defaults in ~/.dreamy/')
         cfgobj.save_config(dreampyParams)
+    else:
+        logger.info('Skipping Saving dreampy defaults in ~/.dreamy/')
 
 
 def first_time_setup():
@@ -93,23 +95,36 @@ def corr_cal_setup():
     return corr_cal_dir
 
 
-def badlags(badlag_file=None, debug=False):
+def badlags(badlag_file=None, debug=False, reset=False, save=False):
     """
-       1. resets all badlags
+       1. (optionally) resets all badlags
        2. (optionally) set them from (chassis,board,channel) list
           the program seek_bad_channels is one way to identify this list
           It will need to be inspected, to avoid assigning bad lags to short lags
+       3. The modified badlags can optionally be saved in the config file for future
+          use.   This will however hamper parallel development, so for that situation
+          reset=False,save=False is recommended.
+
+    NOTE: On 19-jul-2022 this routine has reset=save=False, which are options opposing
+          the previous behavior before these we added
     """
     import dreampy3 as dreampy
 
-    # awkward?:  blank the bad_lags from the ~/.dreampy/dreampyrc file
+    # blank the bad_lags from the ~/.dreampy/dreampyrc file
     # there are 4 chassis and 6 boards for RSR
-    for c in range(4):
-        dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % c] = ['', '', '', '', '', '']
+    if reset:
+        print("dreampy3:  bad_lags have been reset")        
+        for c in range(4):
+            dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % c] = ['', '', '', '', '', '']
+
+    if cfgobj:
+        print("PJT:   patching cfgobj.save", save)
+        cfgobj.save = save
 
     if badlag_file == None:
-        print("dreampy3:  bad_lags have been reset")
         return
+
+    # process the badlag_file (in memory)
 
     nbad = 0
     with open(badlag_file) as blfile:
@@ -121,10 +136,10 @@ def badlags(badlag_file=None, debug=False):
             bad_l = int(words[2])
             dp = dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % bad_c][bad_b]
             if len(dp) == 0:
-                # print("PJT0",bad_c,bad_b,bad_l)
+                #print("PJT0",bad_c,bad_b,bad_l)
                 dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % bad_c][bad_b] = '%d' % bad_l
             else:
-                # print("PJT1",bad_c,bad_b,bad_l,dp)
+                #print("PJT1",bad_c,bad_b,b.bad_l,dp)
                 dreampy.dreampyParams['redshiftchassis']['bad_lags%d' % bad_c][bad_b] = dp + '/%d' % bad_l
             nbad = nbad + 1
     if debug:
@@ -132,7 +147,6 @@ def badlags(badlag_file=None, debug=False):
         print(dreampy.dreampyParams['redshiftchassis'])
     if nbad > 0:
         print("dreampy3: %d bad_lags loaded from %s" % (nbad,badlag_file))
-    
 
 
 
@@ -200,7 +214,12 @@ def get_configobj():
         logger.info("could not find rc file; creating file with defaults")
         home =  os.environ['HOME']
         fname = os.path.join(home, '.dreampy', 'dreampyrc')
-    return Configuration(fname)
+    cfg = Configuration(fname)
+    # cheat and mark that it should be saved (or not) when dreampy exits
+    # when badlags() is uses, it's advices to not save for correctness
+    #     of parallel runs
+    cfg.save = True
+    return cfg
 
 
 cfgobj = get_configobj()
