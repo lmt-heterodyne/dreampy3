@@ -1,21 +1,30 @@
 """
 Modeled after
 https://matplotlib.org/3.1.1/gallery/user_interfaces/embedding_in_qt_sgskip.html
+but better link:
+https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html
 """
 import sys
 import time
 
 import numpy as np
 
-from matplotlib.backends.qt_compat import QtCore, QtWidgets, is_pyqt5
-if is_pyqt5():
-    from matplotlib.backends.backend_qt5agg import (
+try:
+    # new, deals transparently between Qt5 and Qt6
+    from matplotlib.backends.qt_compat import QtCore, QtWidgets
+    from matplotlib.backends.backend_qtagg import (
         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
-    import matplotlib.backends.backend_qt5agg as backend
-else:
-    from matplotlib.backends.backend_qt4agg import (
-        FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
-    import matplotlib.backends.backend_qt4agg as backend
+except:
+    # old code, should not be used
+    from matplotlib.backends.qt_compat import QtCore, QtWidgets, is_pyqt5
+    if is_pyqt5():
+        from matplotlib.backends.backend_qt5agg import (
+            FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
+        import matplotlib.backends.backend_qt5agg as backend
+    else:
+        from matplotlib.backends.backend_qt4agg import (
+            FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
+        import matplotlib.backends.backend_qt4agg as backend
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvasChart
 
