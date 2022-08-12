@@ -1,12 +1,11 @@
 """
 Modeled after
-https://matplotlib.org/3.1.1/gallery/user_interfaces/embedding_in_qt_sgskip.html
+   https://matplotlib.org/3.1.1/gallery/user_interfaces/embedding_in_qt_sgskip.html
 but better link:
-https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html
+   https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html
 """
 import sys
 import time
-
 import numpy as np
 
 try:
@@ -15,9 +14,11 @@ try:
     from matplotlib.backends.qt_compat import QtCore, QtWidgets
     from matplotlib.backends.backend_qtagg import (
         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
+    import matplotlib.backends.backend_qtagg as backend    
     print("Qt version:",QtCore.qVersion())
 except:
-    # old code, should not be used
+    # old deprecate code, should not be used anymore
+    # still needed on old matplotlib
     from matplotlib.backends.qt_compat import QtCore, QtWidgets, is_pyqt5
     if is_pyqt5():
         from matplotlib.backends.backend_qt5agg import (
