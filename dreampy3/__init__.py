@@ -26,10 +26,10 @@ def version():
 @atexit.register
 def _save_defaults():
     if cfgobj and cfgobj.save:
-        logger.info('Saving dreampy defaults in ~/.dreamy/')
+        logger.info('Saving dreampy defaults in ~/.dreampy/')
         cfgobj.save_config(dreampyParams)
     else:
-        logger.info('Skipping Saving dreampy defaults in ~/.dreamy/')
+        logger.info('Skipping Saving dreampy defaults in ~/.dreampy/')
 
 
 def first_time_setup():
