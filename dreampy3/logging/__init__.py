@@ -22,16 +22,21 @@ CRITICAL = 50
 def _get_dreampy_logname():
     """
     Returns the path to the dreampy log file
+    On Unity we cannot share logfiles, this can lead to contention,
+    so the pipeline will set the DREAMPY_LOG to the reduction OBSNUM directory
     """
+    if 'DREAMPY_LOG' in os.environ:
+        return os.environ['DREAMPY_LOG']
+    
     if 'HOME' in os.environ:
         home = os.environ['HOME']
         if os.path.exists(os.path.join(home, '.dreampy')):
             fname = os.path.join(home, '.dreampy', 'dreampy.log')
         else:
             fname = os.path.join(home, 'dreampy.log')
-        return fname
     else:
-        return 'dreampy.log'
+        fname = 'dreampy.log'
+    return fname
 
 
 class NullHandler(pylogging.Handler):
