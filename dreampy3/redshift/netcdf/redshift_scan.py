@@ -1060,7 +1060,8 @@ class RedshiftScan(LMThdu):
                 self.spectrum[0, board, :] = numpy.nan
             self.spectrum[0,board,:]=numpy.ma.masked_invalid(self.spectrum[0,board,:])
 
-        blankarr = blankind.mean(axis=0).astype(numpy.bool)
+        #blankarr = blankind.mean(axis=0).astype(numpy.bool)
+        blankarr = blankind.mean(axis=0).astype(bool)
         blankarr.shape = (1, blankarr.shape[0], blankarr.shape[1])
         self.spectrum[blankarr] = self.blank
         self.baseline()
